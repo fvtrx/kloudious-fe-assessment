@@ -49,7 +49,7 @@ The app includes the following screens:
 1. **Clone the repository**
 
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/fvtrx/kloudious-fe-assessment
    cd kloudious-fe-assessment
    ```
 
