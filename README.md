@@ -16,10 +16,11 @@ A React Native Expo application showcasing user authentication, custom UI compon
 
 The app includes the following screens:
 
-- Login Screen with animated Lottie background
-- Signup Screen with form validation
-- Home Screen for authenticated users
-- Loading states with custom animations
+| Screen | Image screenshot |
+|-------------|--------------|
+| Login Screen     |<img width="220" height="680" alt="Simulator Screenshot - iPhone 16 Pro - 2026-02-09 at 18 14 28" src="https://github.com/user-attachments/assets/3dc7ab51-150f-4b6b-bae2-6b7914f28bef" />|
+| Signup Screen    | <img width="220" height="680" alt="Simulator Screenshot - iPhone 16 Pro - 2026-02-09 at 18 14 34" src="https://github.com/user-attachments/assets/c6899159-d2f0-4a5e-9c75-eea58580b232" /> |
+| Home Screen      | <img width="220" height="680" alt="Simulator Screenshot - iPhone 16 Pro - 2026-02-09 at 18 14 58" src="https://github.com/user-attachments/assets/23d146a0-f45c-40f4-addb-0872cc19599c" /> |
 
 ## 🛠 Tech Stack
 
