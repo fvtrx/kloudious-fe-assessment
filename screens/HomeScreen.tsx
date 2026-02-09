@@ -10,14 +10,18 @@ import {
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '@/contexts/AuthContext';
 import { LogOut, Mail, User, Shield } from 'lucide-react-native';
 import { Loading } from '@/components/screen/Loading';
+import { RootStackParamList } from '@/navigation/types';
+
+type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
 export default function HomeScreen() {
   const { user, logout, isLoading } = useAuth();
-  const router = useRouter();
+  const navigation = useNavigation<HomeScreenNavigationProp>();
 
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -48,15 +52,21 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.replace('/');
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, navigation]);
 
   const handleLogout = async () => {
     setLoggingOut(true);
     await logout();
     setLoggingOut(false);
-    router.replace('/');
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' }],
+    });
   };
 
   if (isLoading || !user) {
@@ -80,7 +90,6 @@ export default function HomeScreen() {
             },
           ]}
         >
-          {/* Welcome Section */}
           <View style={styles.welcomeSection}>
             <View style={styles.avatarContainer}>
               <Text style={styles.avatarText}>
@@ -91,7 +100,6 @@ export default function HomeScreen() {
             <Text style={styles.userName}>{user.name}</Text>
           </View>
 
-          {/* Account Info Card */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Shield size={20} color="#111827" />
@@ -138,7 +146,6 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* Logout Button */}
           <TouchableOpacity
             style={[
               styles.logoutButton,
@@ -158,11 +165,10 @@ export default function HomeScreen() {
             )}
           </TouchableOpacity>
 
-          {/* Footer Info */}
           <View style={styles.footerCard}>
             <Text style={styles.footerTitle}>Authentication Demo</Text>
             <Text style={styles.footerText}>
-              Secure authentication with React Native, Context API, and
+              Secure authentication with React Native, React Navigation, and
               AsyncStorage
             </Text>
           </View>
@@ -187,14 +193,6 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 24,
-  },
-  animationContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  lottie: {
-    width: 120,
-    height: 120,
   },
   welcomeSection: {
     alignItems: 'center',

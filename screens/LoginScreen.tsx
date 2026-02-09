@@ -5,33 +5,37 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  Platform,
   ScrollView,
   ActivityIndicator,
   Animated,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '@/contexts/AuthContext';
-import { Eye, EyeOff, Check } from 'lucide-react-native';
+import { Eye, EyeOff } from 'lucide-react-native';
 import LottieView from 'lottie-react-native';
-import LottieSignup from '@/assets/lottie/signup.json';
+import LottieLogin from '@/assets/lottie/login.json';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { RootStackParamList } from '@/navigation/types';
 
-export default function SignupScreen() {
-  const [name, setName] = useState('');
+type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
+
+export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [nameFocused, setNameFocused] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
-  const { signup, user } = useAuth();
-  const router = useRouter();
+  const { login, user } = useAuth();
+  const navigation = useNavigation<LoginScreenNavigationProp>();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -45,45 +49,46 @@ export default function SignupScreen() {
         duration: 600,
         useNativeDriver: true,
       }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
     ]).start();
   }, []);
 
   useEffect(() => {
     if (user) {
-      router.replace('/home');
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Home' }],
+      });
     }
-  }, [user]);
+  }, [user, navigation]);
 
-  const handleSignup = async () => {
+  const handleLogin = async () => {
     setError('');
     setLoading(true);
 
-    const result = await signup(name, email, password);
+    const result = await login(email, password);
 
     setLoading(false);
 
     if (!result.success) {
-      setError(result.error || 'Signup failed');
+      setError(result.error || 'Login failed');
     } else {
-      router.replace('/home');
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Home' }],
+      });
     }
   };
-
-  // Password strength indicator
-  const getPasswordStrength = () => {
-    if (password.length === 0) return null;
-    if (password.length < 6)
-      return { label: 'Weak', color: '#EF4444', width: '33%' };
-    if (password.length < 10)
-      return { label: 'Medium', color: '#F59E0B', width: '66%' };
-    return { label: 'Strong', color: '#10B981', width: '100%' };
-  };
-
-  const passwordStrength = getPasswordStrength();
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
@@ -94,14 +99,13 @@ export default function SignupScreen() {
             styles.content,
             {
               opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
+              transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
             },
           ]}
         >
-          {/* Lottie Animation */}
           <View style={styles.animationContainer}>
             <LottieView
-              source={LottieSignup}
+              source={LottieLogin}
               autoPlay
               loop
               style={styles.lottie}
@@ -109,41 +113,11 @@ export default function SignupScreen() {
           </View>
 
           <View style={styles.headerContainer}>
-            <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Sign up to get started</Text>
+            <Text style={styles.title}>Welcome</Text>
+            <Text style={styles.subtitle}>Sign in to continue</Text>
           </View>
 
           <View style={styles.formContainer}>
-            {/* Name Input */}
-            <View style={styles.inputContainer}>
-              <Text
-                style={[
-                  styles.label,
-                  (nameFocused || name) && styles.labelFocused,
-                ]}
-              >
-                Full Name
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  nameFocused && styles.inputFocused,
-                  error && styles.inputError,
-                ]}
-                value={name}
-                onChangeText={(text) => {
-                  setName(text);
-                  setError('');
-                }}
-                onFocus={() => setNameFocused(true)}
-                onBlur={() => setNameFocused(false)}
-                autoCapitalize="words"
-                autoComplete="name"
-                placeholderTextColor="#9CA3AF"
-                placeholder="Enter full name"
-              />
-            </View>
-
             {/* Email Input */}
             <View style={styles.inputContainer}>
               <Text
@@ -171,7 +145,7 @@ export default function SignupScreen() {
                 autoCapitalize="none"
                 autoComplete="email"
                 placeholderTextColor="#9CA3AF"
-                placeholder="Enter email address"
+                placeholder="Your email"
               />
             </View>
 
@@ -203,7 +177,7 @@ export default function SignupScreen() {
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   placeholderTextColor="#9CA3AF"
-                  placeholder="Set password"
+                  placeholder="Your password"
                 />
                 <TouchableOpacity
                   style={styles.eyeIcon}
@@ -217,30 +191,6 @@ export default function SignupScreen() {
                   )}
                 </TouchableOpacity>
               </View>
-
-              {/* Password Strength Indicator */}
-              {passwordStrength && (
-                <View style={styles.strengthContainer}>
-                  <View style={styles.strengthBar}>
-                    <Animated.View
-                      style={[
-                        styles.strengthFill,
-                        {
-                          backgroundColor: passwordStrength.color,
-                        },
-                      ]}
-                    />
-                  </View>
-                  <Text
-                    style={[
-                      styles.strengthText,
-                      { color: passwordStrength.color },
-                    ]}
-                  >
-                    {passwordStrength.label}
-                  </Text>
-                </View>
-              )}
             </View>
 
             {error ? (
@@ -249,42 +199,17 @@ export default function SignupScreen() {
               </Animated.View>
             ) : null}
 
-            {/* Password Requirements */}
-            <View style={styles.requirementsContainer}>
-              <View style={styles.requirementItem}>
-                <View
-                  style={[
-                    styles.checkIcon,
-                    password.length >= 6 && styles.checkIconActive,
-                  ]}
-                >
-                  <Check
-                    size={12}
-                    color={password.length >= 6 ? '#FFFFFF' : '#D1D5DB'}
-                  />
-                </View>
-                <Text
-                  style={[
-                    styles.requirementText,
-                    password.length >= 6 && styles.requirementTextActive,
-                  ]}
-                >
-                  At least 6 characters
-                </Text>
-              </View>
-            </View>
-
-            {/* Sign Up Button */}
+            {/* Login Button */}
             <TouchableOpacity
               style={[styles.button, loading && styles.buttonDisabled]}
-              onPress={handleSignup}
+              onPress={handleLogin}
               disabled={loading}
               activeOpacity={0.8}
             >
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.buttonText}>Create Account</Text>
+                <Text style={styles.buttonText}>Sign In</Text>
               )}
             </TouchableOpacity>
 
@@ -295,15 +220,15 @@ export default function SignupScreen() {
               <View style={styles.dividerLine} />
             </View>
 
-            {/* Login Link */}
+            {/* Sign Up Link */}
             <TouchableOpacity
               style={styles.linkButton}
-              onPress={() => router.back()}
+              onPress={() => navigation.navigate('Signup')}
               activeOpacity={0.7}
             >
               <Text style={styles.linkText}>
-                Already have an account?{' '}
-                <Text style={styles.linkTextBold}>Sign In</Text>
+                Don't have an account?{' '}
+                <Text style={styles.linkTextBold}>Sign Up</Text>
               </Text>
             </TouchableOpacity>
           </View>
@@ -331,8 +256,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   lottie: {
-    width: 180,
-    height: 180,
+    width: 200,
+    height: 200,
   },
   headerContainer: {
     marginBottom: 40,
@@ -392,54 +317,6 @@ const styles = StyleSheet.create({
     right: 16,
     top: 16,
     padding: 4,
-  },
-  strengthContainer: {
-    marginTop: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  strengthBar: {
-    flex: 1,
-    height: 4,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  strengthFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
-  strengthText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  requirementsContainer: {
-    gap: 8,
-  },
-  requirementItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  checkIcon: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkIconActive: {
-    backgroundColor: '#10B981',
-  },
-  requirementText: {
-    fontSize: 13,
-    color: '#9CA3AF',
-  },
-  requirementTextActive: {
-    color: '#111827',
-    fontWeight: '500',
   },
   errorContainer: {
     backgroundColor: '#FEF2F2',
