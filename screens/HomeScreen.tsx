@@ -15,7 +15,8 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '@/contexts/AuthContext';
 import { LogOut, Mail, User, Shield } from 'lucide-react-native';
 import { Loading } from '@/components/screen/Loading';
-import { RootStackParamList } from '@/navigation/types';
+import { RootStackParamList } from '@/types/navigation';
+import { Button } from '@/components/ui/Button';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -146,24 +147,16 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          <TouchableOpacity
-            style={[
-              styles.logoutButton,
-              loggingOut && styles.logoutButtonDisabled,
-            ]}
+          <Button
+            text="Log out"
             onPress={handleLogout}
             disabled={loggingOut}
-            activeOpacity={0.8}
-          >
-            {loggingOut ? (
-              <ActivityIndicator color="#111827" />
-            ) : (
-              <>
-                <LogOut size={20} color="#111827" />
-                <Text style={styles.logoutButtonText}>Sign Out</Text>
-              </>
-            )}
-          </TouchableOpacity>
+            loading={loggingOut}
+            icon={<LogOut size={16} color="#111827" />}
+            iconPosition="left"
+            style={styles.logoutButton}
+            textStyle={styles.logoutButtonText}
+          />
 
           <View style={styles.footerCard}>
             <Text style={styles.footerTitle}>Authentication Demo</Text>
@@ -308,9 +301,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-  },
-  logoutButtonDisabled: {
-    opacity: 0.5,
   },
   logoutButtonText: {
     color: '#111827',

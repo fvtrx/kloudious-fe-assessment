@@ -2,34 +2,36 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
-  Platform,
   ScrollView,
-  ActivityIndicator,
   Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '@/contexts/AuthContext';
-import { Eye, EyeOff } from 'lucide-react-native';
 import LottieView from 'lottie-react-native';
 import LottieLogin from '@/assets/lottie/login.json';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { RootStackParamList } from '@/navigation/types';
+import { RootStackParamList } from '@/types/navigation';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 
-type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
+type LoginScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  'Login'
+>;
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({
+    email: '',
+    password: '',
+    general: '',
+  });
   const [loading, setLoading] = useState(false);
-  const [emailFocused, setEmailFocused] = useState(false);
-  const [passwordFocused, setPasswordFocused] = useState(false);
   const { login, user } = useAuth();
   const navigation = useNavigation<LoginScreenNavigationProp>();
 
@@ -68,7 +70,31 @@ export default function LoginScreen() {
   }, [user, navigation]);
 
   const handleLogin = async () => {
-    setError('');
+    // Clear all errors
+    setErrors({ email: '', password: '', general: '' });
+
+    // Validate inputs
+    let hasError = false;
+    const newErrors = { email: '', password: '', general: '' };
+
+    if (!email.trim()) {
+      newErrors.email = 'Email is required';
+      hasError = true;
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Please enter a valid email';
+      hasError = true;
+    }
+
+    if (!password) {
+      newErrors.password = 'Password is required';
+      hasError = true;
+    }
+
+    if (hasError) {
+      setErrors(newErrors);
+      return;
+    }
+
     setLoading(true);
 
     const result = await login(email, password);
@@ -76,7 +102,11 @@ export default function LoginScreen() {
     setLoading(false);
 
     if (!result.success) {
-      setError(result.error || 'Login failed');
+      setErrors({
+        email: '',
+        password: '',
+        general: result.error || 'Login failed',
+      });
     } else {
       navigation.reset({
         index: 0,
@@ -118,100 +148,46 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.formContainer}>
+            {/* General Error Message */}
+            {errors.general && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{errors.general}</Text>
+              </View>
+            )}
+
             {/* Email Input */}
-            <View style={styles.inputContainer}>
-              <Text
-                style={[
-                  styles.label,
-                  (emailFocused || email) && styles.labelFocused,
-                ]}
-              >
-                Email
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  emailFocused && styles.inputFocused,
-                  error && styles.inputError,
-                ]}
-                value={email}
-                onChangeText={(text) => {
-                  setEmail(text);
-                  setError('');
-                }}
-                onFocus={() => setEmailFocused(true)}
-                onBlur={() => setEmailFocused(false)}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-                placeholderTextColor="#9CA3AF"
-                placeholder="Your email"
-              />
-            </View>
+            <Input
+              type="email"
+              label="Email"
+              placeholder="Enter your email"
+              value={email}
+              onChangeText={(text) => {
+                setEmail(text);
+                setErrors((prev) => ({ ...prev, email: '', general: '' }));
+              }}
+              error={errors.email}
+            />
 
             {/* Password Input */}
-            <View style={styles.inputContainer}>
-              <Text
-                style={[
-                  styles.label,
-                  (passwordFocused || password) && styles.labelFocused,
-                ]}
-              >
-                Password
-              </Text>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  style={[
-                    styles.input,
-                    styles.passwordInput,
-                    passwordFocused && styles.inputFocused,
-                    error && styles.inputError,
-                  ]}
-                  value={password}
-                  onChangeText={(text) => {
-                    setPassword(text);
-                    setError('');
-                  }}
-                  onFocus={() => setPasswordFocused(true)}
-                  onBlur={() => setPasswordFocused(false)}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  placeholderTextColor="#9CA3AF"
-                  placeholder="Your password"
-                />
-                <TouchableOpacity
-                  style={styles.eyeIcon}
-                  onPress={() => setShowPassword(!showPassword)}
-                  activeOpacity={0.7}
-                >
-                  {showPassword ? (
-                    <EyeOff size={20} color="#6B7280" />
-                  ) : (
-                    <Eye size={20} color="#6B7280" />
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {error ? (
-              <Animated.View style={styles.errorContainer}>
-                <Text style={styles.errorText}>{error}</Text>
-              </Animated.View>
-            ) : null}
+            <Input
+              type="password"
+              label="Password"
+              value={password}
+              onChangeText={(text) => {
+                setPassword(text);
+                setErrors((prev) => ({ ...prev, password: '', general: '' }));
+              }}
+              error={errors.password}
+            />
 
             {/* Login Button */}
-            <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
+            <Button
+              text="Sign In"
+              style={styles.button}
               onPress={handleLogin}
+              loading={loading}
               disabled={loading}
-              activeOpacity={0.8}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.buttonText}>Sign In</Text>
-              )}
-            </TouchableOpacity>
+            />
 
             {/* Divider */}
             <View style={styles.divider}>
@@ -276,47 +252,6 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     gap: 20,
-  },
-  inputContainer: {
-    marginBottom: 4,
-  },
-  label: {
-    fontSize: 13,
-    color: '#9CA3AF',
-    marginBottom: 8,
-    fontWeight: '500',
-  },
-  labelFocused: {
-    color: '#111827',
-  },
-  input: {
-    height: 52,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: '#111827',
-    backgroundColor: '#FAFAFA',
-  },
-  inputFocused: {
-    borderColor: '#111827',
-    backgroundColor: '#FFFFFF',
-  },
-  inputError: {
-    borderColor: '#EF4444',
-  },
-  passwordContainer: {
-    position: 'relative',
-  },
-  passwordInput: {
-    paddingRight: 50,
-  },
-  eyeIcon: {
-    position: 'absolute',
-    right: 16,
-    top: 16,
-    padding: 4,
   },
   errorContainer: {
     backgroundColor: '#FEF2F2',

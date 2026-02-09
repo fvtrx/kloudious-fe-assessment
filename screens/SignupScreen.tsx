@@ -2,35 +2,39 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
   Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '@/contexts/AuthContext';
-import { Eye, EyeOff, Check } from 'lucide-react-native';
+import { Check } from 'lucide-react-native';
 import LottieView from 'lottie-react-native';
 import LottieSignup from '@/assets/lottie/signup.json';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { RootStackParamList } from '@/navigation/types';
+import { RootStackParamList } from '@/types/navigation';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
 
-type SignupScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Signup'>;
+type SignupScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  'Signup'
+>;
 
 export default function SignupScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [nameFocused, setNameFocused] = useState(false);
-  const [emailFocused, setEmailFocused] = useState(false);
-  const [passwordFocused, setPasswordFocused] = useState(false);
+  const [errors, setErrors] = useState({
+    name: '',
+    email: '',
+    password: '',
+    general: '',
+  });
+  const [isLoading, setIsLoading] = useState(false);
   const { signup, user } = useAuth();
   const navigation = useNavigation<SignupScreenNavigationProp>();
 
@@ -62,15 +66,52 @@ export default function SignupScreen() {
   }, [user, navigation]);
 
   const handleSignup = async () => {
-    setError('');
-    setLoading(true);
+    // Clear all errors
+    setErrors({ name: '', email: '', password: '', general: '' });
+
+    // Validate inputs
+    let hasError = false;
+    const newErrors = { name: '', email: '', password: '', general: '' };
+
+    if (!name.trim()) {
+      newErrors.name = 'Full name is required';
+      hasError = true;
+    }
+
+    if (!email.trim()) {
+      newErrors.email = 'Email is required';
+      hasError = true;
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Please enter a valid email';
+      hasError = true;
+    }
+
+    if (!password) {
+      newErrors.password = 'Password is required';
+      hasError = true;
+    } else if (password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+      hasError = true;
+    }
+
+    if (hasError) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setIsLoading(true);
 
     const result = await signup(name, email, password);
 
-    setLoading(false);
+    setIsLoading(false);
 
     if (!result.success) {
-      setError(result.error || 'Signup failed');
+      setErrors({
+        name: '',
+        email: '',
+        password: '',
+        general: result.error || 'Signup failed',
+      });
     } else {
       navigation.reset({
         index: 0,
@@ -82,10 +123,10 @@ export default function SignupScreen() {
   const getPasswordStrength = () => {
     if (password.length === 0) return null;
     if (password.length < 6)
-      return { label: 'Weak', color: '#EF4444', width: '33%' };
+      return { label: 'Weak', color: '#EF4444', width: 0.33 };
     if (password.length < 10)
-      return { label: 'Medium', color: '#F59E0B', width: '66%' };
-    return { label: 'Strong', color: '#10B981', width: '100%' };
+      return { label: 'Medium', color: '#F59E0B', width: 0.66 };
+    return { label: 'Strong', color: '#10B981', width: 1 };
   };
 
   const passwordStrength = getPasswordStrength();
@@ -122,106 +163,52 @@ export default function SignupScreen() {
           </View>
 
           <View style={styles.formContainer}>
-            <View style={styles.inputContainer}>
-              <Text
-                style={[
-                  styles.label,
-                  (nameFocused || name) && styles.labelFocused,
-                ]}
-              >
-                Full Name
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  nameFocused && styles.inputFocused,
-                  error && styles.inputError,
-                ]}
-                value={name}
-                onChangeText={(text) => {
-                  setName(text);
-                  setError('');
-                }}
-                onFocus={() => setNameFocused(true)}
-                onBlur={() => setNameFocused(false)}
-                autoCapitalize="words"
-                autoComplete="name"
-                placeholderTextColor="#9CA3AF"
-                placeholder="Enter full name"
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text
-                style={[
-                  styles.label,
-                  (emailFocused || email) && styles.labelFocused,
-                ]}
-              >
-                Email
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  emailFocused && styles.inputFocused,
-                  error && styles.inputError,
-                ]}
-                value={email}
-                onChangeText={(text) => {
-                  setEmail(text);
-                  setError('');
-                }}
-                onFocus={() => setEmailFocused(true)}
-                onBlur={() => setEmailFocused(false)}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-                placeholderTextColor="#9CA3AF"
-                placeholder="Enter email address"
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text
-                style={[
-                  styles.label,
-                  (passwordFocused || password) && styles.labelFocused,
-                ]}
-              >
-                Password
-              </Text>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  style={[
-                    styles.input,
-                    styles.passwordInput,
-                    passwordFocused && styles.inputFocused,
-                    error && styles.inputError,
-                  ]}
-                  value={password}
-                  onChangeText={(text) => {
-                    setPassword(text);
-                    setError('');
-                  }}
-                  onFocus={() => setPasswordFocused(true)}
-                  onBlur={() => setPasswordFocused(false)}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  placeholderTextColor="#9CA3AF"
-                  placeholder="Set password"
-                />
-                <TouchableOpacity
-                  style={styles.eyeIcon}
-                  onPress={() => setShowPassword(!showPassword)}
-                  activeOpacity={0.7}
-                >
-                  {showPassword ? (
-                    <EyeOff size={20} color="#6B7280" />
-                  ) : (
-                    <Eye size={20} color="#6B7280" />
-                  )}
-                </TouchableOpacity>
+            {/* General Error Message */}
+            {errors.general && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{errors.general}</Text>
               </View>
+            )}
+
+            {/* Name Input */}
+            <Input
+              type="name"
+              label="Full Name"
+              placeholder="Enter full name"
+              value={name}
+              onChangeText={(text) => {
+                setName(text);
+                setErrors((prev) => ({ ...prev, name: '', general: '' }));
+              }}
+              error={errors.name}
+            />
+
+            {/* Email Input */}
+            <Input
+              type="email"
+              label="Email"
+              placeholder="Enter email address"
+              value={email}
+              onChangeText={(text) => {
+                setEmail(text);
+                setErrors((prev) => ({ ...prev, email: '', general: '' }));
+              }}
+              error={errors.email}
+            />
+
+            {/* Password Input with Strength Indicator */}
+            <View>
+              <Input
+                type="password"
+                label="Password"
+                placeholder="Set password"
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  setErrors((prev) => ({ ...prev, password: '', general: '' }));
+                }}
+                error={errors.password}
+              />
 
               {passwordStrength && (
                 <View style={styles.strengthContainer}>
@@ -231,6 +218,7 @@ export default function SignupScreen() {
                         styles.strengthFill,
                         {
                           backgroundColor: passwordStrength.color,
+                          width: `${passwordStrength.width * 100}%`,
                         },
                       ]}
                     />
@@ -247,12 +235,7 @@ export default function SignupScreen() {
               )}
             </View>
 
-            {error ? (
-              <Animated.View style={styles.errorContainer}>
-                <Text style={styles.errorText}>{error}</Text>
-              </Animated.View>
-            ) : null}
-
+            {/* Password Requirements */}
             <View style={styles.requirementsContainer}>
               <View style={styles.requirementItem}>
                 <View
@@ -277,25 +260,23 @@ export default function SignupScreen() {
               </View>
             </View>
 
-            <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
+            {/* Signup Button */}
+            <Button
+              text="Create account"
+              style={styles.button}
               onPress={handleSignup}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.buttonText}>Create Account</Text>
-              )}
-            </TouchableOpacity>
+              loading={isLoading}
+              disabled={isLoading}
+            />
 
+            {/* Divider */}
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
               <Text style={styles.dividerText}>or</Text>
               <View style={styles.dividerLine} />
             </View>
 
+            {/* Sign In Link */}
             <TouchableOpacity
               style={styles.linkButton}
               onPress={() => navigation.goBack()}
@@ -351,47 +332,6 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     gap: 20,
-  },
-  inputContainer: {
-    marginBottom: 4,
-  },
-  label: {
-    fontSize: 13,
-    color: '#9CA3AF',
-    marginBottom: 8,
-    fontWeight: '500',
-  },
-  labelFocused: {
-    color: '#111827',
-  },
-  input: {
-    height: 52,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: '#111827',
-    backgroundColor: '#FAFAFA',
-  },
-  inputFocused: {
-    borderColor: '#111827',
-    backgroundColor: '#FFFFFF',
-  },
-  inputError: {
-    borderColor: '#EF4444',
-  },
-  passwordContainer: {
-    position: 'relative',
-  },
-  passwordInput: {
-    paddingRight: 50,
-  },
-  eyeIcon: {
-    position: 'absolute',
-    right: 16,
-    top: 16,
-    padding: 4,
   },
   strengthContainer: {
     marginTop: 8,
