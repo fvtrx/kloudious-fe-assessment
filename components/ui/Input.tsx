@@ -171,21 +171,15 @@ export const Input: React.FC<ComponentProps> = ({
       case 'phone':
         // Remove all non-numeric characters
         const cleaned = text.replace(/\D/g, '');
-        // Format as US phone number
+        // Format as MY phone number
         if (cleaned.length <= 3) {
           formattedText = cleaned;
-        } else if (cleaned.length <= 6) {
-          formattedText = `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
+        } else if (cleaned.length <= 7) {
+          formattedText = `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
         } else if (cleaned.length <= 10) {
-          formattedText = `(${cleaned.slice(0, 3)}) ${cleaned.slice(
-            3,
-            6,
-          )}-${cleaned.slice(6)}`;
+          formattedText = `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}-${cleaned.slice(7)}`;
         } else {
-          formattedText = `(${cleaned.slice(0, 3)}) ${cleaned.slice(
-            3,
-            6,
-          )}-${cleaned.slice(6, 10)}`;
+          formattedText = `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}-${cleaned.slice(7, 10)}`;
         }
         break;
 
